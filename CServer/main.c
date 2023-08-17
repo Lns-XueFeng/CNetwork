@@ -21,6 +21,10 @@ int main(int argc, char* argv[])
     {
         char user_input[100];
         int sr = scanf_s("%s", user_input, 100);
+
+        // Windows上的客户端网络编程基本范式
+        // Linux稍微不同，具体在进行服务器编程时查询即可
+
         if (strcmp(HELLO_SERVER_WIN, user_input) == 0)
         {
             printf("CServer starting...\n");
@@ -30,6 +34,16 @@ int main(int argc, char* argv[])
 
     return 0;
 }
+
+/*
+ * hello_server_win: 展示了基本的winsock服务端的基本范式
+ * 1.Winsock的初始化
+ * 2.socket套接字的建立
+ * 3.bind分配IP地址和端口号
+ * 4.listen监听客户端连接
+ * 5.accept接受客户端的连接请求
+ * 6.send发送字节数据至客户端
+*/
 
 int hello_server_win(int argc, char* argv[])
 {
