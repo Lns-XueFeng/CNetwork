@@ -8,12 +8,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <winsock.h>
+#include <winsock2.h>
 
+#define BUF_SIZE 1024
 #define HELLO_SERVER_WIN "hello_server_win"
+#define ECHO_SERVER_WIN "echo_server_win"
 
 void error_handling(char* message);
 int hello_server_win(int argc, char* argv[]);
+int echo_server_win(int argc, char* argv[]);
 
 int main(int argc, char* argv[])
 {
@@ -27,8 +30,13 @@ int main(int argc, char* argv[])
 
         if (strcmp(HELLO_SERVER_WIN, user_input) == 0)
         {
-            printf("CServer starting...\n");
+            printf("HelloServer starting...\n");
             hello_server_win(argc, argv);
+        }
+        else if (strcmp(ECHO_SERVER_WIN, user_input) == 0)
+        {
+            printf("EchoServer starting...\n");
+            echo_server_win(argc, argv);
         }
     }
 
@@ -100,6 +108,81 @@ int hello_server_win(int argc, char* argv[])
     WSACleanup();
 
     return 0;
+}
+
+/*
+ * echo_server_win: 回声服务端
+ * 将客户端传递而来的字符串原封不动的返回
+ * 仅仅响应五次客户端发出的请求
+*/
+
+int echo_server_win(int argc, char* argv[])
+{
+    WSADATA wsa_data;
+    SOCKET serv_sock, clnt_sock;
+    SOCKADDR_IN serv_addr, clnt_addr;
+
+    char message[BUF_SIZE];
+    int str_len, i = 0, clnt_addr_len;
+
+    if (argc != 2) 
+    {
+        printf("Usage: %s <port>", argv[0]);
+        exit(1);
+    }
+
+    if (WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0)
+    {
+        error_handling("WSAStartup fail");
+    }
+
+    serv_sock = socket(PF_INET, SOCK_STREAM, 0);
+    if (serv_sock == INVALID_SOCKET) 
+    {
+        error_handling("socket fail");
+    }
+
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_port = htons(atoi(argv[1]));
+
+    if (bind(serv_sock, (SOCKADDR*)&serv_addr, sizeof(serv_addr)) == SOCKET_ERROR)
+    {
+        error_handling("bind fail");
+    }
+
+    if (listen(serv_sock, 5) == SOCKET_ERROR)
+    {
+        error_handling("listen fail");
+    }
+
+    clnt_addr_len = sizeof(clnt_addr);
+
+    while (1)
+    {
+        if (i == 5) { break; }
+  
+        clnt_sock = accept(serv_sock, (SOCKADDR*)&clnt_addr, &clnt_addr_len);
+        if (clnt_sock == INVALID_SOCKET)
+        {
+            error_handling("accept fail");
+        }
+        
+        printf("Connected client %d\n", i + 1);
+        while ((str_len = recv(clnt_sock, message, BUF_SIZE, 0)) != 0)
+        {
+            send(clnt_sock, message, str_len, 0);
+        }
+
+        closesocket(clnt_sock);
+        i++;
+    }
+
+    closesocket(serv_sock);
+    WSACleanup();
+    return 0;
+
 }
 
 void error_handling(char* message)

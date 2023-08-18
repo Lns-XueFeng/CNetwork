@@ -8,14 +8,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <winsock.h>
+#include <winsock2.h>
 
+#define BUF_SIZE 1024
 #define HELLO_CLIENT_WIN "hello_client_win"
 #define TCP_CLIENT_WIN "tcp_client_win"
+#define ECHO_CLIENT_WIN "echo_client_win"
 
 void error_handling(char* message);
 int hello_client_win(int argc, char* argv[]);
 int tcp_client_win(int argc, char* argv[]);
+int echo_client_win(int argc, char* argv[]);
 
 int main(int argc, char* argv[])
 {
@@ -29,13 +32,18 @@ int main(int argc, char* argv[])
 
         if (strcmp(HELLO_CLIENT_WIN, user_input) == 0)
         {
-            printf("CClient starting...\n");
+            printf("HelloClient starting...\n");
             hello_client_win(argc, argv);  
         }
         else if (strcmp(TCP_CLIENT_WIN, user_input) == 0)
         {
-            printf("CClient starting...\n");
+            printf("TcpClient starting...\n");
             tcp_client_win(argc, argv);
+        }
+        else if (strcmp(ECHO_CLIENT_WIN, user_input) == 0)
+        {
+            printf("EchoClient starting...\n");
+            echo_client_win(argc, argv);
         }
     }
 
@@ -48,7 +56,7 @@ int main(int argc, char* argv[])
  * 2.socket套接字的建立
  * 3.connect客户端连接服务端
  * 4.recv接收服务器发送的字节数据
-*/
+ */
 
 int hello_client_win(int argc, char* argv[])
 {
@@ -101,7 +109,7 @@ int hello_client_win(int argc, char* argv[])
 
 /*
  * tcp_client_win: 用于验证TCP套接字“传输的数据不存在数据边界”
-*/
+ */
 
 int tcp_client_win(int argc, char* argv[])
 {
@@ -145,7 +153,6 @@ int tcp_client_win(int argc, char* argv[])
         {
             error_handling("recv fail");
         }
-        printf("%d\n", read_len);
         strlen += read_len;
         // if (message[index - 1] == '\0') { break; }
     }
@@ -156,6 +163,66 @@ int tcp_client_win(int argc, char* argv[])
     closesocket(h_socket);
     WSACleanup();
 
+    return 0;
+}
+
+/*
+ * echo_client_win: 回声客户端
+ * 用于向服务器发送字符串并接收服务器原封不动的返回
+ */
+
+int echo_client_win(int argc, char* argv[])
+{
+    WSADATA wsa_data;
+    SOCKET clnt_sock;
+    SOCKADDR_IN serv_addr;
+
+    int str_len;
+    char message[BUF_SIZE];
+
+    if (argc != 3)
+    {
+        printf("Usage: %s <ip> <port>\n", argv[0]);
+        exit(1);
+    }
+
+    if (WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0)
+    {
+        error_handling("WSAStartup fail");
+    }
+
+    clnt_sock = socket(PF_INET, SOCK_STREAM, 0);
+    if (clnt_sock == INVALID_SOCKET)
+    {
+        error_handling("socket fail");
+    }
+
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = inet_addr(argv[1]);
+    serv_addr.sin_port = htons(atoi(argv[2]));
+
+    if (connect(clnt_sock, (SOCKADDR*)&serv_addr, sizeof(serv_addr)) == SOCKET_ERROR)
+    {
+        error_handling("connect fail");
+    }
+
+    printf("Conneted...\n");
+    while (1)
+    {
+        fputs("Input message(q to quit): ", stdout);
+        fgets(message, BUF_SIZE, stdin);
+
+        if (strcmp(message, "q") == 0) { break; }
+
+        send(clnt_sock, message, strlen(message), 0);
+        str_len = recv(clnt_sock, message, BUF_SIZE - 1, 0);
+        message[str_len] = 0;
+        printf("Message from server: %s", message);
+    }
+
+    closesocket(clnt_sock);
+    WSACleanup();
     return 0;
 }
 
