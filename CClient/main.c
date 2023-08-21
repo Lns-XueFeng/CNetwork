@@ -14,11 +14,13 @@
 #define HELLO_CLIENT_WIN "hello_client_win"
 #define TCP_CLIENT_WIN "tcp_client_win"
 #define ECHO_CLIENT_WIN "echo_client_win"
+#define OP_CLIENT_WIN "op_client_win"
 
 void error_handling(char* message);
 int hello_client_win(int argc, char* argv[]);
 int tcp_client_win(int argc, char* argv[]);
 int echo_client_win(int argc, char* argv[]);
+int op_client_win(int argc, char* argv[]);
 
 int main(int argc, char* argv[])
 {
@@ -44,6 +46,11 @@ int main(int argc, char* argv[])
         {
             printf("EchoClient starting...\n");
             echo_client_win(argc, argv);
+        }
+        else if (strcmp(OP_CLIENT_WIN, user_input) == 0)
+        {
+            printf("OpClient starting...\n");
+            op_client_win(argc, argv);
         }
     }
 
@@ -108,7 +115,9 @@ int hello_client_win(int argc, char* argv[])
 }
 
 /*
- * tcp_client_win: 用于验证TCP套接字“传输的数据不存在数据边界”
+ * tcp_client_win
+ * 功能：连接服务器后，接收来自服务器的数据
+ * 目的：用于验证TCP套接字“传输的数据不存在数据边界”
  */
 
 int tcp_client_win(int argc, char* argv[])
@@ -168,7 +177,8 @@ int tcp_client_win(int argc, char* argv[])
 
 /*
  * echo_client_win: 回声客户端
- * 用于向服务器发送字符串并接收服务器原封不动的返回
+ * 功能：用于向服务器发送字符串并接收服务器原封不动的返回
+ * 目的：体验编写一个较为完整的客户端
  */
 
 int echo_client_win(int argc, char* argv[])
@@ -177,7 +187,7 @@ int echo_client_win(int argc, char* argv[])
     SOCKET clnt_sock;
     SOCKADDR_IN serv_addr;
 
-    int str_len;
+    int str_len, mess_len, recv_len;
     char message[BUF_SIZE];
 
     if (argc != 3)
@@ -215,15 +225,114 @@ int echo_client_win(int argc, char* argv[])
 
         if (strcmp(message, "q") == 0) { break; }
 
-        send(clnt_sock, message, strlen(message), 0);
-        str_len = recv(clnt_sock, message, BUF_SIZE - 1, 0);
-        message[str_len] = 0;
+        /*
+          回声客户端可提前预知所发送的信息长度
+          但一般情况下均无法预知，因此对于实际网络应用需要定义应用层的协议
+        */
+        recv_len = 0;
+        mess_len = send(clnt_sock, message, strlen(message), 0);
+        while (recv_len < mess_len)
+        {
+            str_len = recv(clnt_sock, message, BUF_SIZE - 1, 0);
+            if (str_len == -1)
+            {
+                error_handling("recv fail");
+            }
+            recv_len += str_len;
+        }
+        message[recv_len] = 0;
         printf("Message from server: %s", message);
     }
 
     closesocket(clnt_sock);
     WSACleanup();
     return 0;
+}
+
+/*
+ * op_client_win: 运算客户端
+ * 功能：向服务器发送数字并要求进行运算以及返回
+ * 目的：用于体验设计应用层协议（规则）的一整个完整过程
+ */
+
+/* 应用层协议
+ * 客户端连接到服务器端后以1字节的正式形式传递待运算数字个数
+ * 客户端向服务器端传送的每个整数型数据占用4字节
+ * 传递整数型数据后接着传递运算符，运算符数据占用1字节
+ * 选择字符+、-、*之一传送
+ * 服务器端以四字节整数型向客户端传送运算结果
+ * 客户端得到结果之后终止与服务器端的连接
+ */
+
+#define OPSIZE 4
+
+int op_client_win(int argc, char* argv[])
+{
+    WSADATA wsa_data;
+    SOCKET clnt_sock;
+    struct sockaddr_in serv_addr;
+
+    char buffer[BUF_SIZE];
+    int count = 0;
+    char operator;
+    int send_len, recv_len = 0, new_recv_len;
+
+    int opt_result;
+
+    if (argc != 3)
+    {
+        printf("Usage: %s <ip> <port>", argv[0]);
+    }
+
+    if (WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0)
+    {
+        error_handling("WSAStartup fail");
+    }
+
+    clnt_sock = socket(PF_INET, SOCK_STREAM, 0);
+    if (clnt_sock == INVALID_SOCKET)
+    {
+        error_handling("socket fail");
+    }
+
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = inet_addr(argv[1]);
+    serv_addr.sin_port = htons(atoi(argv[2]));
+
+    if (connect(clnt_sock, (SOCKADDR*)&serv_addr, sizeof(serv_addr)) == SOCKET_ERROR)
+    {
+        error_handling("connect fail");
+    }
+
+    fputs("Operand count: ", stdout);
+    scanf("%d", &count);
+    buffer[0] = (char) count;   // 第一个是总运算个数
+    for (int index = 0; index < count; index++)
+    {
+        printf("Operand %d: ", index + 1);
+        scanf("%d", (int*)&buffer[index * OPSIZE + 1]);   // 中间是运算数
+    }
+
+    fgetc(stdin);
+    fputs("Operator: ", stdout);
+    scanf("%c", &buffer[count * OPSIZE + 1]);   // 最后一个是运算符
+
+    if (send(clnt_sock, &buffer, count * OPSIZE + 2, 0) == SOCKET_ERROR)
+    {
+        error_handling("send fail");
+    }
+
+    new_recv_len = recv(clnt_sock, &opt_result, OPSIZE, 0);
+    if (new_recv_len == -1)
+    {
+        error_handling("recv fail");
+    }
+
+    printf("Operator result: %d\n", opt_result);
+    closesocket(clnt_sock);
+    WSACleanup();
+    return EXIT_SUCCESS;
 }
 
 void error_handling(char* message)

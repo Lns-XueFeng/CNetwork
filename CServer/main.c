@@ -13,10 +13,12 @@
 #define BUF_SIZE 1024
 #define HELLO_SERVER_WIN "hello_server_win"
 #define ECHO_SERVER_WIN "echo_server_win"
+#define OP_SERVER_WIN "op_server_win"
 
 void error_handling(char* message);
 int hello_server_win(int argc, char* argv[]);
 int echo_server_win(int argc, char* argv[]);
+int op_server_win(int argc, char* argv[]);
 
 int main(int argc, char* argv[])
 {
@@ -37,6 +39,11 @@ int main(int argc, char* argv[])
         {
             printf("EchoServer starting...\n");
             echo_server_win(argc, argv);
+        }
+        else if (strcmp(OP_SERVER_WIN, user_input) == 0)
+        {
+            printf("OpServer starting...\n");
+            op_server_win(argc, argv);
         }
     }
 
@@ -112,8 +119,8 @@ int hello_server_win(int argc, char* argv[])
 
 /*
  * echo_server_win: 回声服务端
- * 将客户端传递而来的字符串原封不动的返回
- * 仅仅响应五次客户端发出的请求
+ * 功能：将客户端传递而来的字符串原封不动的返回，限制为五个客户端连接
+ * 目的：体验编写一个较为完整的服务端
 */
 
 int echo_server_win(int argc, char* argv[])
@@ -182,7 +189,98 @@ int echo_server_win(int argc, char* argv[])
     closesocket(serv_sock);
     WSACleanup();
     return 0;
+}
 
+/*
+ * op_server_win: 运算服务端
+ * 功能：接收来自客户端的需计算数据并返回计算结果
+ * 目的：用于体验设计应用层协议（规则）的一整个完整过程
+ */
+
+#define OPSIZE 4
+
+int op_server_win(int argc, char* argv[])
+{
+    WSADATA wsa_data;
+    SOCKET clnt_sock, serv_sock;
+    SOCKADDR_IN clnt_addr, serv_addr;
+
+    int recv_len;
+    char message[BUF_SIZE];
+    int clnt_addr_len;
+
+    int count;
+    char oper_t, add = '+', sub = '-', mul = '*';
+    int result = 0;
+
+    if (argc != 2)
+    {
+        printf("Usage %s <port>", argv[0]);
+    }
+
+    if (WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0)
+    {
+        error_handling("WSAStartup fail");
+    }
+
+    serv_sock = socket(PF_INET, SOCK_STREAM, 0);
+    if (serv_sock == INVALID_SOCKET)
+    {
+        error_handling("socket fail");
+    }
+
+    memset(&serv_addr, 0, sizeof(serv_sock));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_port = htons(atoi(argv[1]));
+
+    if (bind(serv_sock, (SOCKADDR*)&serv_addr, sizeof(serv_addr)) == SOCKET_ERROR)
+    {
+        error_handling("bind fail");
+    }
+
+    if (listen(serv_sock, 5) == SOCKET_ERROR)
+    {
+        error_handling("listen fail");
+    }
+
+    clnt_addr_len = sizeof(clnt_addr);
+    for (int index = 0; index < 5; index++)
+    {
+        clnt_sock = accept(serv_sock, (SOCKADDR*)&clnt_addr, &clnt_addr_len);
+        if (clnt_sock == INVALID_SOCKET)
+        {
+            error_handling("accept fail");
+        }
+
+        recv_len = recv(clnt_sock, message, sizeof(message), 0);
+        if (recv_len == -1)
+        {
+            error_handling("recv fail");
+        }
+
+        count = (int)message[0];   // 总运算数
+        oper_t = message[recv_len - 1];   // 运算符
+
+        switch (oper_t)
+        {
+        case '+': 
+            for (int index = 0; index < count; index++) result = result + message[index * OPSIZE + 1]; break;
+        case '-': 
+            for (int index = 0; index < count; index++) result = result - message[index * OPSIZE + 1]; break;
+        case '*': 
+            for (int index = 0; index < count; index++) result = result * message[index * OPSIZE + 1]; break;
+        default: 
+            printf("caculator fail"); break;
+        }
+
+        send(clnt_sock, (char*)&result, sizeof(result), 0);
+        closesocket(clnt_sock);
+    }
+  
+    closesocket(serv_sock);
+    WSACleanup();
+    return EXIT_SUCCESS;
 }
 
 void error_handling(char* message)
