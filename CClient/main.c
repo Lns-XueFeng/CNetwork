@@ -15,18 +15,22 @@
 #define TCP_CLIENT_WIN "tcp_client_win"
 #define ECHO_CLIENT_WIN "echo_client_win"
 #define OP_CLIENT_WIN "op_client_win"
+#define UECHO_CLIENT_WIN "uecho_client_win"
 
 void error_handling(char* message);
 int hello_client_win(int argc, char* argv[]);
 int tcp_client_win(int argc, char* argv[]);
 int echo_client_win(int argc, char* argv[]);
 int op_client_win(int argc, char* argv[]);
+int uecho_client_win(int argc, char* argv[]);
 
 int main(int argc, char* argv[])
 {
     if (argc == 3)
     {
         char user_input[100];
+
+        fputs("Which client you want fire: ", stdout);
         int sr = scanf_s("%s", user_input, 100);
 
         // Windows上的客户端网络编程基本范式
@@ -51,6 +55,11 @@ int main(int argc, char* argv[])
         {
             printf("OpClient starting...\n");
             op_client_win(argc, argv);
+        }
+        else if (strcmp(UECHO_CLIENT_WIN, user_input) == 0)
+        {
+            printf("UechoClient starting...\n");
+            uecho_client_win(argc, argv);
         }
     }
 
@@ -330,6 +339,61 @@ int op_client_win(int argc, char* argv[])
     }
 
     printf("Operator result: %d\n", opt_result);
+    closesocket(clnt_sock);
+    WSACleanup();
+    return EXIT_SUCCESS;
+}
+
+int uecho_client_win(int argc, char* argv[])
+{
+    WSADATA wsa_data;
+    SOCKET clnt_sock;
+    struct sockaddr_in serv_addr;
+
+    int str_len;
+    int serv_addr_len;
+    char message[30];
+
+    if (argc != 3)
+    {
+        printf("Usage: %s <ip> <port>", argv[0]);
+    }
+
+    if (WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0)
+    {
+        error_handling("WSAStartup fail");
+    }
+
+    clnt_sock = socket(PF_INET, SOCK_DGRAM, 0);
+    if (clnt_sock == INVALID_SOCKET)
+    {
+        error_handling("socket fail");
+    }
+
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = inet_addr(argv[1]);
+    serv_addr.sin_port = htons(atoi(argv[2]));
+    connect(clnt_sock, (SOCKADDR*)&serv_addr, sizeof(serv_addr));
+    /*
+     * 当使用了connect进行连接时，则可按照之前那样使用send、recv来接发数据
+     * 当不使用connect进行连接时，专供给UDP的sendto会自动分配ip、port进行连接，recvfrom是接收数据
+     */
+
+    while (1)
+    {
+        fputs("Insert message(q to quit): ", stdout);
+        scanf("%s", message);
+        if (strcmp(message, "q") == 0) { break; }
+
+        send(clnt_sock, message, strlen(message), 0);
+        // sendto(clnt_sock, message, strlen(message), 0, (SOCKADDR*)&serv_addr, sizeof(serv_addr));
+        str_len = recv(clnt_sock, message, sizeof(message) - 1, 0);
+        // serv_addr_len = sizeof(serv_addr);
+        // str_len = recvfrom(clnt_sock, message, strlen(message) - 1, 0, (SOCKADDR*)&serv_addr, &serv_addr_len);
+        message[str_len] = 0;
+        printf("Mesaage from server: %s", message);
+    }
     closesocket(clnt_sock);
     WSACleanup();
     return EXIT_SUCCESS;
