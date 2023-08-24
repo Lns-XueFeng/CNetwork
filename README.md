@@ -2,7 +2,7 @@
 此项目内的代码均是适用于Windows，但Linux亦非常重要，因此在此处补充Linux与Windows的差异之处！
 - CServer：集合了多个Server端函数供调用
 - CClient：集合了多个Client端函数供调用
-- 注意：克隆本项目后使用VS打开CNetwork.sln，相关命令参数均已配置，直接启动并输入相对应的服务端和客户端名称即可
+- 注意：克隆本项目后使用VS打开CNetwork.sln，相关命令参数均已配置，直接点击启动即可
 
 ## Linux
 在Linux下的网络套接字编程需要用到**<sys/socket.h>**，直接导入即可！
