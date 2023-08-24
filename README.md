@@ -71,7 +71,7 @@ int connect(int sockfd, struct sockaddr* serv_addr, socklen_t addrlen);
  */
 ```
 
-### 不同之处
+### 补充
 
 Linux之上一切皆文件，因此socket其实也是Linux上的一种文件，那么文件相关的操作函数便是通用的，比如open、close、write、read等。
 
@@ -292,7 +292,7 @@ int WSACleaup(void);
  */
 ```
 
-### 不同之处
+### 补充
 
 值得注意一点的是：send、recv并非Windows独有的，在Linux之中也有它们，但是一般而言在Linux环境时使用write、read即可
 
@@ -308,6 +308,28 @@ serv_addr.sin_addr.s_addr = inet_addr(argv[1]);
 serv_addr.sin_port = htons(atoi(argv[2]));
 
 (SOCKADDR*) serv_addr;
+```
+
+```c
+// UDP程序之中核心的两个函数
+ssize_t sendto(int sock, void* buff, size_t nbytes, int flags, struct sockaddr* to, socklen_t addrlen);
+/*
+ * sock     表示数据发送对象连接的套接字
+ * buff     保存待发送数据的缓冲地址值
+ * nbytes   待传输的数据长度，以字节为单位
+ * flags    发送数据时用到的多种选项信息
+ * to       存有目标地址信息的sockaddr结构体变量的地址值
+ * addrlen  传递给参数to的地址值结构体变量长度
+ */
+ssize_t recvfrom(int sock, void* buff, size_t nbytes, int flags, struct sockaddr* from, socklen_t addrlen);
+/*
+ * sock     表示数据接收对象连接的套接字
+ * buff     保存接收数据的缓冲地址值
+ * nbytes   可接收的最大字节数，故无法超过参数buff所指的缓冲大小
+ * flags    发送数据时用到的多种选项信息
+ * from     存有发送端地址信息的sockaddr结构体变量的地址值
+ * addrlen  保存参数from的结构体变量长度的变量地址值
+ */
 ```
 
 
