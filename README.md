@@ -5,7 +5,7 @@
 - 注意：克隆本项目后使用VS打开CNetwork.sln，相关命令参数均已配置，直接点击启动即可
 
 ## Linux
-在Linux下的网络套接字编程需要用到**<sys/socket.h>**，直接导入即可！
+在Linux下的网络套接字编程需要用到<sys/socket.h>，直接导入即可！
 
 ### 服务端
 
@@ -116,7 +116,7 @@ ssize_t read(int fd, void* buf, size_t nbytes);
 
 
 ## Windows
-在Windows下的网络套接字编程需要用到**<winsock2.h>**，需要提前在Vissual Studio中链接ws2_32.lib库！
+在Windows下的网络套接字编程需要用到<winsock2.h>，需要提前在Vissual Studio中链接ws2_32.lib库！
 
 ### 服务端
 
