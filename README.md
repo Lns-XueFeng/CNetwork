@@ -116,7 +116,7 @@ ssize_t read(int fd, void* buf, size_t nbytes);
 
 
 ## Windows
-在Windows下的网络套接字编程需要用到**<winsock2.h>**，需要提前在**Vissual Studio**中链接**ws2_32.lib**库！
+在Windows下的网络套接字编程需要用到**<winsock2.h>**，需要提前在Vissual Studio中链接ws2_32.lib库！
 
 ### 服务端
 
