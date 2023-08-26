@@ -332,6 +332,29 @@ ssize_t recvfrom(int sock, void* buff, size_t nbytes, int flags, struct sockaddr
  */
 ```
 
+```c
+// 优雅的断开套接字
+int shutdown(int sock, int howto);
+/*
+ * howto    传递断开套接字方式的信息
+ * Linux与Windows表示断开输入/输出的名称不一致，用时自查即可
+ */
+```
+
+```c
+// 域名解析函数（在Linux中需引入<netd.h>，Windows已经包括在<winsock2.h>之中
+struct hostent* gethostbyname(const char* hostname);
+/*
+ * 返回一个结构体，其中h_addr_list最为重要
+ */
+```
+
+```c
+// 套接字的多种可选项
+int getsockopt(int sock, int level, int optname, void* optval, socklen_t* optlen);
+int setsockopt(int sock, int level, int optname, void* optval, socklen_t* optlen);
+```
+
 
 
 
