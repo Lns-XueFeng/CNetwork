@@ -355,7 +355,27 @@ int getsockopt(int sock, int level, int optname, void* optval, socklen_t* optlen
 int setsockopt(int sock, int level, int optname, void* optval, socklen_t* optlen);
 ```
 
+```c
+// 创建子进程
+pid_t fork(void);
+// 信号与signal函数
+void (*signal(int signo, void (*func)(int))(int);
+// 管道通信
+int pipe(int filedes[2]);
+// I/O复用
+int select(int maxfd, fd_set* readset, fd_set* writeset, fd_set* exceptset, const struct timeval* timeout);
+// 多线程的使用
+#include <pthread.h>
+```
 
-
-
-
+```c
+// 合理使用其他I/O函数
+/*
+ * Linux中的send & recv
+ * Linux中的readv & writev
+ */
+// 多播与广播
+// 多播可跨越不同的网络一次性向多个主机发送数据
+// 广播只能向同一网络的主机传输数据
+// 通过设置套接字选项来进行实现
+```
